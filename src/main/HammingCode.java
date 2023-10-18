@@ -2,6 +2,7 @@ package main;
 
 import java.util.Scanner;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 
 public class HammingCode {
@@ -13,7 +14,6 @@ public class HammingCode {
 		try (Scanner scan = new Scanner(System.in)){
 			
 			int i = scan.nextInt();
-			
 			scan.nextLine();
 			
 			switch(i) {
@@ -61,7 +61,7 @@ public class HammingCode {
 	
 	
 	private static void validateTest() {
-		
+		// TODO add tests
 		String cor = "0100010000111101";
 		String incor = "0110010000111101";
 		
@@ -77,9 +77,6 @@ public class HammingCode {
 		ArrayList<Character> correctBits = calculateControlBits(correctMessage);
 		ArrayList<Character> testBits = calculateControlBits(testMessage);
 		
-		ArrayList<Character> correctControlBits = new ArrayList<Character>();
-		ArrayList<Character> testControlBits = new ArrayList<Character>();
-		
 		System.out.println("Bits of a Valid message:");
 		displayBinaryBits(correctBits);
 		System.out.println();
@@ -87,31 +84,50 @@ public class HammingCode {
 		displayBinaryBits(testBits);
 		System.out.println();
 		
-		int indErrorBit = -1;
+		HashMap<String, String> results = checkForInconsistency(correctBits, testBits);
 		
-		for(int i = 0; i <= 4; i++) {
-			int indControlBit = (int)Math.pow(2, i) - 1;
+		System.out.println("Сontrol bits for a valid message: " + results.get("ValidBits"));
+		System.out.println("Test message control bits: " + results.get("TestBits"));
+		
+		if(results.containsKey("ErrorBit")) {
+			System.out.println("Number of the control bit that did not match: " + results.get("ErrorBit"));
 			
-			correctControlBits.add(correctBits.get(indControlBit));
-			testControlBits.add(testBits.get(indControlBit));
-					
+			System.out.println("In valid message bit №" + results.get("ErrorBit") + " = "
+					+ correctBits.get(Integer.parseInt(results.get("ErrorBit"))));
+			
+			System.out.println("In test message bit №" + results.get("ErrorBit") + " = "
+					+ testBits.get(Integer.parseInt(results.get("ErrorBit"))));
+		}
+	}
+	
+	private static HashMap<String, String> checkForInconsistency(
+			ArrayList<Character> correctBits, 
+			ArrayList<Character> testBits){
+		
+		HashMap<String, String> results = new HashMap<String, String>();
+		
+		StringBuilder correctControlBits = new StringBuilder();
+		StringBuilder testControlBits = new StringBuilder();
+		
+		int i = 0;
+		int indControlBit = ((int)Math.pow(2, i)) - 1;
+		
+		while(indControlBit < correctBits.size()) {
+			correctControlBits.append(correctBits.get(indControlBit));
+			testControlBits.append(testBits.get(indControlBit));
+			
 			if(correctBits.get(indControlBit) != testBits.get(indControlBit)) {
-				indErrorBit = indControlBit;	
+				results.put("ErrorBit", Integer.toString(indControlBit));	
 			}
+			
+			i++;
+			indControlBit = ((int)Math.pow(2, i)) - 1;
 		}
 		
-		System.out.println("Сontrol bits for a valid message:");
-		displayBinaryBits(correctControlBits);
-		System.out.println();
-		System.out.println("Test message control bits:");
-		displayBinaryBits(testControlBits);
-		System.out.println();
+		results.put("ValidBits", correctControlBits.toString());
+		results.put("TestBits", testControlBits.toString());
 		
-		if(indErrorBit > -1) {
-			System.out.println("Number of the control bit that did not match: " + indErrorBit);
-			System.out.println("In valid message bit №" + indErrorBit + " = " + correctBits.get(indErrorBit));
-			System.out.println("In test message bit №" + indErrorBit + " = " + testBits.get(indErrorBit));
-		}
+		return results;
 	}
 	
 	
@@ -128,26 +144,26 @@ public class HammingCode {
 		ArrayList<Character> hexadecimalMessage = createHexadecimalMessage(binaryMessage);
 		
 		int i = 0;
-		int bit;
+		int bit = ((int)Math.pow(2, i)) - 1;
+		int messageSize = hexadecimalMessage.size();
 		
-		do{
-			bit = (int)Math.pow(2, i);
-			
-			hexadecimalMessage.set(bit - 1, checkParityBit(hexadecimalMessage, bit));
+		while(bit < messageSize){
+			hexadecimalMessage.set(bit, checkParityBit(hexadecimalMessage, bit));
 			
 			i++;
 			
-		}while(bit != 16);	
+			bit = ((int)Math.pow(2, i)) - 1;	
+		};	
 		
 		return hexadecimalMessage;
 	}
 	
 	
 	private static char checkParityBit(ArrayList<Character> hexadecimalMessage, int bit) {
-		
+		// TODO refactor names
 		int count1 = 0;
-		
-		int i = bit - 1;
+		bit += 1;
+		int i = bit;
 		
 		while(i < hexadecimalMessage.size()) {
 			for(int j = i; j < i + bit; j++) {
@@ -173,8 +189,14 @@ public class HammingCode {
 	
 	private static ArrayList<Character> addControlBits(ArrayList<Character> hexadecimalMessage){
 		
-		for(int i = 0; i <= 4; i++) { // 2^4 = 16 bit	
-			hexadecimalMessage.add((int)Math.pow(2, i)-1, '0');
+		int i = 0;
+		int bit = ((int)Math.pow(2, i)) - 1;
+		int messageSize = hexadecimalMessage.size();
+		
+		while(bit < messageSize) {
+			hexadecimalMessage.add(bit, '0');
+			i++;
+			bit = ((int)Math.pow(2, i)) - 1;
 		}
 		
 		return hexadecimalMessage;		
@@ -190,7 +212,5 @@ public class HammingCode {
 		}
 		
 		return addControlBits(hexadecimalMessage);
-	}
-	
-	
+	}	
 }
