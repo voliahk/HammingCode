@@ -77,12 +77,8 @@ public class HammingCode {
 		ArrayList<Character> correctBits = calculateControlBits(correctMessage);
 		ArrayList<Character> testBits = calculateControlBits(testMessage);
 		
-		System.out.println("Bits of a Valid message:");
-		displayBinaryBits(correctBits);
-		System.out.println();
-		System.out.println("Bits of a Test message:");
-		displayBinaryBits(testBits);
-		System.out.println();
+		System.out.println("Bits of a Valid message: " + getStringRepresentation(correctBits));
+		System.out.println("Bits of a Test message: " + getStringRepresentation(testBits));
 		
 		HashMap<String, String> results = checkForInconsistency(correctBits, testBits);
 		
@@ -131,11 +127,15 @@ public class HammingCode {
 	}
 	
 	
-	private static void displayBinaryBits(ArrayList<Character> message) {
+	private static String getStringRepresentation(ArrayList<Character> list) {
 		
-		for(int i = 0; i < message.size(); i++) {
-			System.out.print(message.get(i));
-		}	
+		StringBuilder builder = new StringBuilder(list.size());
+		
+		for(char bit: list) {
+			builder.append(bit);
+		}
+		
+		return builder.toString();
 	}
 	
 	
