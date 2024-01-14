@@ -2,10 +2,11 @@ package main;
 
 import java.util.Scanner;
 import java.util.ArrayList;
-import java.util.HashMap;
-
 
 public class HammingCode {
+	
+	static ArrayList<Integer> NUM_OF_CONTROL_BITS = new ArrayList<>();
+	
 	
 	public static void main(String[] args) {
 		
@@ -32,27 +33,27 @@ public class HammingCode {
 			System.out.println("Invalid value! " + e);
 		}	
 		
-		System.out.print("The application is finished...");
+		System.out.print("\nThe application is finished...");
 	}
 	
 	
 	private static void displayInfo() {
 		
-		System.out.println("Hamming code");
+		System.out.println("Код хэмминга");
 		
-		System.out.println("1 - Enter a binary message for verification");
+		System.out.println("1 - Ввести значения вручную");
 		
-		System.out.println("2 - Run tests");
+		System.out.println("2 - Запустить тесты");
 	}
 	
 	
 	private static void manualBinaryValidate(Scanner scan) {
 		
-		System.out.println("Enter correct binary message: ");
+		System.out.println("Введите правильное сообщение: ");
 		
 		String correctMessage = scan.nextLine();
 		
-		System.out.println("Enter test binary message: ");
+		System.out.println("Введите неправильное сообщение: ");
 		
 		String testMessage = scan.nextLine();
 		
@@ -62,70 +63,51 @@ public class HammingCode {
 	
 	private static void validateTest() {
 		// TODO add tests
-		String cor = "0100010000111101";
-		String incor = "0110010000111101";
+		String cor =   "1100010000110101";
+		String incor = "1100010000110100";
 		
-		cor = "100111100110";
-		incor = "100111101110";
+		//cor =   "0110100001100001";
+		//incor = "0110100001100001";
+		
+		//cor =   "10";
+		//incor = "11";
+		
 		
 		validateMessages(cor, incor);
 	}
 	
 	
 	private static void validateMessages(String correctMessage, String testMessage) {
+		setControlBits(correctMessage.length());
+		ArrayList<Character> correctBits = calculateParityBits(correctMessage);
+		ArrayList<Character> testBits = calculateParityBits(testMessage);
 		
-		ArrayList<Character> correctBits = calculateControlBits(correctMessage);
-		ArrayList<Character> testBits = calculateControlBits(testMessage);
+		System.out.println("Правильное сообщение с контрольными битами: \n" 
+							+ getStringRepresentation(correctBits));
+		System.out.println("Неправильное сообщение с контрольными битами: \n" 
+							+ getStringRepresentation(testBits));
 		
-		System.out.println("Bits of a Valid message: " + getStringRepresentation(correctBits));
-		System.out.println("Bits of a Test message: " + getStringRepresentation(testBits));
+		int errorBit = getErrorBit(correctBits, testBits);
 		
-		HashMap<String, String> results = checkForInconsistency(correctBits, testBits);
-		
-		System.out.println("Сontrol bits for a valid message: " + results.get("ValidBits"));
-		System.out.println("Test message control bits: " + results.get("TestBits"));
-		
-		if(results.containsKey("ErrorBit")) {
-			System.out.println("Number of the control bit that did not match: " + results.get("ErrorBit"));
+		if(errorBit > -1) {
+			System.out.println("\nНАЙДЕНА ОШИБКА!!!");
+			System.out.println("\nНомер ошибочного бита: " + errorBit);
 			
-			System.out.println("In valid message bit №" + results.get("ErrorBit") + " = "
-					+ correctBits.get(Integer.parseInt(results.get("ErrorBit"))));
+			System.out.println("В правильном сообщении это бит №" + errorBit 
+								+ " = " + correctBits.get(errorBit));
 			
-			System.out.println("In test message bit №" + results.get("ErrorBit") + " = "
-					+ testBits.get(Integer.parseInt(results.get("ErrorBit"))));
+			System.out.println("В неправильном сообщении это бит №" + errorBit 
+								+ " = " + testBits.get(errorBit));
+			
+			System.out.println("\nБиты исправленного сообщения: \n" + сorrectTheError(testBits, errorBit));
+			
 		}
-	}
-	
-	private static HashMap<String, String> checkForInconsistency(
-			ArrayList<Character> correctBits, 
-			ArrayList<Character> testBits){
-		
-		HashMap<String, String> results = new HashMap<String, String>();
-		
-		StringBuilder correctControlBits = new StringBuilder();
-		StringBuilder testControlBits = new StringBuilder();
-		
-		int i = 0;
-		int indControlBit = ((int)Math.pow(2, i)) - 1;
-		
-		while(indControlBit < correctBits.size()) {
-			correctControlBits.append(correctBits.get(indControlBit));
-			testControlBits.append(testBits.get(indControlBit));
-			
-			if(correctBits.get(indControlBit) != testBits.get(indControlBit)) {
-				results.put("ErrorBit", Integer.toString(indControlBit));	
-			}
-			
-			i++;
-			indControlBit = ((int)Math.pow(2, i)) - 1;
+		else {
+			System.out.println("\nОшибки нет. Биты совпадают.");
 		}
-		
-		results.put("ValidBits", correctControlBits.toString());
-		results.put("TestBits", testControlBits.toString());
-		
-		return results;
+		System.out.println("Биты правильного сообщения: \n" + correctMessage);
+		System.out.println("Биты неправильного сообщения: \n" + testMessage);
 	}
-	
 	
 	private static String getStringRepresentation(ArrayList<Character> list) {
 		
@@ -138,79 +120,102 @@ public class HammingCode {
 		return builder.toString();
 	}
 	
-	
-	private static ArrayList<Character> calculateControlBits(String binaryMessage) {
+	// Исправление ошибки
+	private static String сorrectTheError(ArrayList<Character> incorrectMessage, int errorBit) {
+		char result = (incorrectMessage.get(errorBit) % 2) == 0 ? '1': '0';
+		incorrectMessage.set(errorBit, result);
 		
-		ArrayList<Character> hexadecimalMessage = createHexadecimalMessage(binaryMessage);
+		for(int controlBit = NUM_OF_CONTROL_BITS.size() - 1; controlBit >= 0; controlBit--) {
+			incorrectMessage.remove((int)NUM_OF_CONTROL_BITS.get(controlBit));
+		}
 		
-		int i = 0;
-		int bit = ((int)Math.pow(2, i)) - 1;
-		int messageSize = hexadecimalMessage.size();
-		
-		while(bit < messageSize){
-			hexadecimalMessage.set(bit, checkParityBit(hexadecimalMessage, bit));
-			
-			i++;
-			
-			bit = ((int)Math.pow(2, i)) - 1;	
-		};	
-		
-		return hexadecimalMessage;
+		return getStringRepresentation(incorrectMessage);		
 	}
 	
-	
-	private static char checkParityBit(ArrayList<Character> hexadecimalMessage, int bit) {
-		// TODO refactor names
-		int count1 = 0;
-		bit += 1;
-		int i = bit;
+	// Поиск ошибочного контрольного бита
+	private static int getErrorBit(ArrayList<Character> correctMessages, 
+									ArrayList<Character> incorectMessages){
 		
-		while(i < hexadecimalMessage.size()) {
-			for(int j = i; j < i + bit; j++) {
-				if(j >= hexadecimalMessage.size()) {
-					break;
-				}
-				if(hexadecimalMessage.get(j) == '1') {
-					count1++;
-				}
+		int numOfIncorrectBit = 0;
+		
+		for(Integer controlBit: NUM_OF_CONTROL_BITS) {
+			if(correctMessages.get(controlBit) != incorectMessages.get(controlBit)) {
+				numOfIncorrectBit += controlBit + 1;
+			}
+		}	
+
+		return numOfIncorrectBit - 1;
+	}
+	
+	// Вычисление контрольных бит
+	private static ArrayList<Character> calculateParityBits(String binaryMessage) {
+		ArrayList<Character> messageWithControlBits = getControlBitMessage(binaryMessage);
+		ArrayList<Character> encodedMessage = new ArrayList<>(messageWithControlBits);
+		
+		for(Integer controlBit: NUM_OF_CONTROL_BITS) {
+			encodedMessage.set(controlBit, isEvenOrOdd(getTotalSumOfControlledBits(messageWithControlBits, controlBit)));
+		}	
+		
+		return encodedMessage;
+	}
+	
+	// Вычисление суммы контрольного бита
+	private static int getTotalSumOfControlledBits(ArrayList<Character> encodedMessage, int controlBit) {
+		int totalSumOfBits = 0;
+		int stepBit = controlBit+1;
+		int startBit = stepBit;
+		int currentBit = startBit; 
+		
+		while(currentBit - 1 < encodedMessage.size()) {
+			
+			totalSumOfBits += Character.getNumericValue(encodedMessage.get(currentBit - 1));
+			currentBit++;
+			
+			if(currentBit >= startBit + stepBit) {
+				startBit += stepBit + stepBit;
+				currentBit = startBit;
 			}
 			
-			i += bit + bit;
 		}
-		
-		if(count1 % 2 == 0) {
+		return totalSumOfBits;
+	}
+	
+	// Определение четности бита
+	private static char isEvenOrOdd(int totalSumOfBits) {
+		if(totalSumOfBits % 2 == 0) {
 			return '0';
 		}
-		else {
-			return '1';
-		}
+		return '1';
 	}
 	
-	
-	private static ArrayList<Character> addControlBits(ArrayList<Character> hexadecimalMessage){
+	// Добавление сообщению контрольных бит
+	private static ArrayList<Character> getControlBitMessage(String binaryMessage){
 		
-		int i = 0;
-		int bit = ((int)Math.pow(2, i)) - 1;
-		int messageSize = hexadecimalMessage.size();
+		ArrayList<Character> encodedMessage = new ArrayList<Character>();
 		
-		while(bit < messageSize) {
-			hexadecimalMessage.add(bit, '0');
-			i++;
-			bit = ((int)Math.pow(2, i)) - 1;
-		}
-		
-		return hexadecimalMessage;		
-	}
-	
-	
-	private static ArrayList<Character> createHexadecimalMessage(String binaryMessage){
-		
-		ArrayList<Character> hexadecimalMessage = new ArrayList<Character>();
-		
+		// Перевод строки в ArrayList<Character>
 		for(char letter: binaryMessage.toCharArray()) {
-			hexadecimalMessage.add(letter);
+			encodedMessage.add(letter);
 		}
 		
-		return addControlBits(hexadecimalMessage);
+		for(Integer controlBit: NUM_OF_CONTROL_BITS) {
+			encodedMessage.add(controlBit, '0');
+		}
+		
+		return encodedMessage;
 	}	
+	
+	// Определение контрольных битов для сообщения n-размера
+	private static void setControlBits(int messageSize) {
+		int i = 0;
+		int parityBit = 0;
+		
+		while(parityBit < messageSize + NUM_OF_CONTROL_BITS.size()) {
+			NUM_OF_CONTROL_BITS.add(parityBit);
+			i++;
+			parityBit = ((int)Math.pow(2, i)) - 1;
+		}
+		System.out.println(NUM_OF_CONTROL_BITS.toString());
+	}
+	
 }
